@@ -3,7 +3,6 @@
 
   let { size = 500 } = $props()
 
-  // reactive state
   /** @type {SVGSVGElement} */
   let svgEl
   /** @type {Array<{ points: Array<[x: number, y: number] | [x: number, y: number, pressure: number]> }>} */
@@ -22,8 +21,8 @@
     taperEnd: 0,
   })
 
-  // Convert the polygon returned by getStroke into an SVG path.
   /**
+   * Convert the polygon returned by getStroke into an SVG path.
    * @param {(readonly number[])[]} stroke Outline polygon from perfect-freehand
    * @param {boolean} [closed=true]
    * @returns {string}
@@ -55,7 +54,6 @@
     strokes.map((s) => getSvgPathFromStroke(getStroke(s.points, options)))
   )
 
-  // map pointer event to SVG-local coordinates + pressure
   /**
    * Convert pointer event to local coords.
    * Returns [x,y] if real pressure not available (lets library simulate),
@@ -120,13 +118,13 @@
 
 <div class="canvas-wrap">
   <div class="controls">
-    <label
-      > Thickness
+    <label>
+      Thickness
       <input type="range" min="1" max="80" step="1" bind:value={options.size} />
     </label>
 
-    <label
-      > Expressiveness
+    <label>
+      Expressiveness
       <input
         type="range"
         min="0"
@@ -137,8 +135,8 @@
       />
     </label>
 
-    <label
-      > Color
+    <label>
+      Color
       <input type="color" bind:value={color} />
     </label>
 
