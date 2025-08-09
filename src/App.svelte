@@ -7,11 +7,3 @@
 
 <DrawingCanvas size={600} />
 <SoundGenerator />
-
-<style>
-  :global(body){
-    margin:0;
-    background:#fafafa; /* light background */
-    font-family: system-ui, sans-serif;
-  }
-</style>
