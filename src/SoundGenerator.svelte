@@ -1,5 +1,4 @@
 <script>
-  import { activeColor } from './colorStore.js'
   import { onDestroy } from 'svelte'
   let unsub
   let sharedColor = '#000'

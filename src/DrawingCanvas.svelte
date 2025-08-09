@@ -11,9 +11,7 @@
   let strokes = $state([])
 
   let isDrawing = $state(false)
-  import { activeColor } from './colorStore.js'
   let color = $state('#111111')
-  $effect(() => { activeColor.set(color) })
 
   // Usually the same thing as strokes, but when animating, changes to that
   let isAnimating = $state(false)
@@ -236,7 +234,7 @@
   >
     <!-- render each stroke as its own filled path -->
     {#each strokePaths as d}
-      <path {d} class="stroke-color" fill={color} fill-rule="nonzero" />
+      <path {d} fill={color} fill-rule="nonzero" />
     {/each}
   </svg>
 
@@ -259,7 +257,7 @@
     />
 
     <div class="controls-buttons">
-  <input type="color" bind:value={color} disabled={isAnimating} />
+      <input type="color" bind:value={color} disabled={isAnimating} />
       <button onclick={clear} disabled={isAnimating}>🚫</button>
       <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
