@@ -1,5 +1,6 @@
 <script>
   import { getStroke } from 'perfect-freehand'
+  import { onMount } from 'svelte'
 
   let { size = 500 } = $props()
 
@@ -240,6 +241,21 @@
     if (isAnimating) return
     strokes.pop()
   }
+
+  // Keyboard shortcuts (Ctrl/Cmd + Z for undo)
+  onMount(() => {
+    function handleKeydown(e) {
+      // Ignore if focused element is an input to avoid interfering with native editing
+      const ae = document.activeElement
+      if (ae && ae.tagName === 'INPUT') return
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        undo()
+      }
+    }
+    window.addEventListener('keydown', handleKeydown)
+    return () => window.removeEventListener('keydown', handleKeydown)
+  })
 
   /** @param {number} ms */
   async function sleep(ms) {
