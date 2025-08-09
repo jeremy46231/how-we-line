@@ -2,15 +2,16 @@
   import { getStroke } from 'perfect-freehand'
   import { onMount } from 'svelte'
 
-  let { size = 500, initialDrawingState } = $props()
+  let { size = 500, initialDrawingState = undefined } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
+  /** @typedef {{ strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number }} DrawingState */
 
   /** @type {SVGSVGElement} */
   let svgEl
 
   /**
-   * @type {{ strokes: { points: Point[] }[], color: string, backgroundColor: string }}
+   * @type {DrawingState}
    */
   let drawingState = $state(
     initialDrawingState ?? {
@@ -22,6 +23,8 @@
   )
 
   let isDrawing = $state(false)
+  let isUploading = $state(false)
+  let uploadingStatus = $state('📤')
 
   const symmetrySettings = [
     {
@@ -333,6 +336,31 @@
 
     URL.revokeObjectURL(url)
   }
+
+  async function uploadDrawing() {
+    if (isAnimating || isUploading) return
+    try {
+      isUploading = true
+      uploadingStatus = '⏳'
+      // Snapshot to avoid mutation during upload
+      const snapshot = $state.snapshot(drawingState)
+      const body = JSON.stringify(snapshot)
+      if (body.length > 5 * 1024 * 1024) {
+        return
+      }
+      const res = await fetch('https://hwl.jer.app/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+    } catch (err) {
+      console.error('Upload error:', err)
+      uploadingStatus = '❌'
+    } finally {
+      isUploading = false
+      uploadingStatus = '✅'
+    }
+  }
 </script>
 
 <div class="drawing-canvas">
@@ -388,7 +416,11 @@
       <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
+      <button onclick={uploadDrawing} disabled={isAnimating || isUploading}>{uploadingStatus}</button>
     </div>
+    {#if uploadMessage}
+      <div class="status">{uploadMessage}</div>
+    {/if}
   </div>
 </div>
 
