@@ -13,6 +13,69 @@
   let isDrawing = $state(false)
   let color = $state('#111111')
 
+  const symmetrySettings = [
+    { // no symmetry
+      copies: [
+        { angle: 0, reflect: false }
+      ]
+    },
+    { // 8-way symmetry
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 45, reflect: false },
+        { angle: 90, reflect: false },
+        { angle: 135, reflect: false },
+        { angle: 180, reflect: false },
+        { angle: 225, reflect: false },
+        { angle: 270, reflect: false },
+        { angle: 315, reflect: false }
+      ]
+    },
+    { // 6-way symmetry
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 60, reflect: false },
+        { angle: 120, reflect: false },
+        { angle: 180, reflect: false },
+        { angle: 240, reflect: false },
+        { angle: 300, reflect: false }
+      ]
+    },
+    { // 4-way symmetry
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 90, reflect: false },
+        { angle: 180, reflect: false },
+        { angle: 270, reflect: false },
+      ]
+    },
+    { // 3-way symmetry
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 120, reflect: false },
+        { angle: 240, reflect: false },
+      ]
+    },
+    { // 2-way symmetry over the vertical axis
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 0, reflect: true },
+      ]
+    },
+    { // 2-way symmetry over the horizontal axis
+      copies: [
+        { angle: 0, reflect: false },
+        { angle: 180, reflect: true },
+      ]
+    }
+  ]
+  let symmetry = $state(1)
+  let currentSymmetry = $derived.by(() => symmetrySettings[symmetry])
+  function incrementSymmetry() {
+    symmetry++
+    symmetry %= symmetrySettings.length
+  }
+
   // Usually the same thing as strokes, but when animating, changes to that
   let isAnimating = $state(false)
   /** @type {{ points: Point[] }[]} */
@@ -62,7 +125,7 @@
 
   /**
    * Rotate a stroke around the center by a given number of degrees
-   * @param {number[][]} stroke
+   * @param {[number, number][]} stroke
    * @param {number} degrees
    * @param {number} [cx=size/2] Optional center x (defaults to canvas center)
    * @param {number} [cy=size/2] Optional center y (defaults to canvas center)
@@ -80,6 +143,16 @@
       return [rx, ry]
     })
   }
+  /**
+   * Reflect a stroke across the vertical axis through the center.
+   * @param {[number, number][]} stroke
+   * @param {number} [cx=size/2] Optional center x (defaults to canvas center)
+   * @param {number} [cy=size/2] Optional center y (defaults to canvas center)
+   * @returns {[number, number][]}
+   */
+  function reflectStroke(stroke, cx = size / 2, cy = size / 2) {
+    return stroke.map(([x, y]) => [-x + cx * 2, y])
+  }
 
   // Derived array of path "d" values, one per stroke
   /** @type {string[]} */
@@ -89,14 +162,22 @@
       const hasRealPressure = s.points
         .slice(0, 10)
         .some((p) => ![undefined, 0, 0.5, 1].includes(p[2]))
+      /** @type {[number, number][]} */
+      // @ts-ignore
       const stroke = getStroke(s.points, {
         ...options,
         simulatePressure: !hasRealPressure,
       })
-      const angles = [0, 45, 90, 135, 180, 225, 270, 315]
-      const paths = angles.map((angle) => {
-        const rotatedStroke = rotateStroke(stroke, angle)
-        return getSvgPathFromStroke(rotatedStroke)
+
+      const paths = currentSymmetry.copies.map((copy) => {
+        let modifiedStroke = stroke
+        if (copy.angle !== 0) {
+          modifiedStroke = rotateStroke(modifiedStroke, copy.angle)
+        }
+        if (copy.reflect) {
+          modifiedStroke = reflectStroke(modifiedStroke)
+        }
+        return getSvgPathFromStroke(modifiedStroke)
       })
       return paths
     })
@@ -164,7 +245,6 @@
   }
   async function animate() {
     if (isAnimating) return
-    console.log('Animating...')
     isAnimating = true
     animationStrokes.length = 0
     // @ts-ignore
@@ -172,7 +252,6 @@
     while (animationStrokes.length > 0) {
       const stroke = animationStrokes[0]
       while (stroke.points.length > 0) {
-        console.log('hii')
         stroke.points.shift()
         await sleep(4)
       }
@@ -181,10 +260,8 @@
     animationStrokes.length = 0
     await sleep(250)
     for (const stroke of strokes) {
-      console.log('stroke')
       animationStrokes.push({ points: [] })
       for (const point of stroke.points) {
-        console.log('point')
         const [x, y, pressure] = point
         animationStrokes[animationStrokes.length - 1].points.push([
           x,
@@ -196,9 +273,8 @@
       await sleep(100)
     }
     isAnimating = false
-    console.log('Animation complete')
   }
-  // small convenience: export a method usable by a parent via component ref
+
   export function getSvgString() {
     // Build SVG containing all strokes with their original colors
     const paths = strokePaths
@@ -258,6 +334,7 @@
 
     <div class="controls-buttons">
       <input type="color" bind:value={color} disabled={isAnimating} />
+      <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
       <button onclick={clear} disabled={isAnimating}>🚫</button>
       <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
