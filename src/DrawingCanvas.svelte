@@ -254,16 +254,19 @@
           localStorage.getItem('savedDrawings')
         )
 
-        const mostRecentDrawingId = currentlySavedDrawings.reverse()[0].id;
+        const mostRecentDrawingId = currentlySavedDrawings.reverse()[0].id
 
-        if (drawingState.id === mostRecentDrawingId) currentlySavedDrawings.pop();
+        if (drawingState.id === mostRecentDrawingId)
+          currentlySavedDrawings.pop()
 
         localStorage.setItem(
           'savedDrawings',
-          JSON.stringify([
-            ...currentlySavedDrawings,
-            { id: drawingState.id, strokes: strokePaths },
-          ])
+          JSON.stringify(
+            [
+              ...currentlySavedDrawings,
+              { id: drawingState.id, strokes: strokePaths },
+            ].slice(-6)
+          )
         )
       } else {
         localStorage.setItem(
@@ -283,6 +286,10 @@
   function undo() {
     if (isAnimating) return
     drawingState.strokes.pop()
+  }
+  function clearPastDrawings() {
+    localStorage.removeItem('savedDrawings')
+    document.getElementById('pastDrawings').innerHTML = ''
   }
 
   // Keyboard shortcuts (Ctrl/Cmd + Z for undo)
@@ -443,16 +450,17 @@
       <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
-      <button onclick={uploadDrawing} disabled={isAnimating || isUploading}>{uploadingStatus}</button>
+      <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
+      <button onclick={uploadDrawing} disabled={isAnimating || isUploading}
+        >{uploadingStatus}</button
+      >
     </div>
   </div>
 </div>
 
 <div id="pastDrawings">
   {#if localStorage.getItem('savedDrawings')}
-    {#each JSON.parse(localStorage.getItem('savedDrawings'))
-      .slice(-6)
-      .reverse() as drawing}  
+    {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
       <svg
         viewBox="0 0 {size} {size}"
         class="past-svg"
