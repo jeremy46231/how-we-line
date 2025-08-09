@@ -1,0 +1,25 @@
+input[type='range'] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+.controls {
+  width: 50%;
+  margin: 0 auto;
+}
+
+.controls input[type='range'] {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+button {
+  padding: 4px 10px;
+}
+
+button,
+input[type='color'] {
+  /* background-color: lightgray; */
+  border: none;
+  height: 50;
+}
