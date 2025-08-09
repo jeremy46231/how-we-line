@@ -3,11 +3,12 @@
   import { onMount } from 'svelte'
   import { nanoid } from 'nanoid'
   import PostDialog from './PostDialog.svelte'
+  import SoundGenerator from './SoundGenerator.svelte'
 
   let { size = 500, initialDrawingState = undefined } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
-  /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number, size: number, thinning: number, smoothing: number, streamline: number, taperStart: number, taperEnd: number }} DrawingState */
+  /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number, size: number, thinning: number, smoothing: number, streamline: number, taperStart: number, taperEnd: number, voices: object }} DrawingState */
 
   /** @type {SVGSVGElement} */
   let svgEl
@@ -30,6 +31,7 @@
       streamline: 0.5,
       taperStart: 0,
       taperEnd: 0,
+      voices: {},
     }
   )
 
@@ -37,6 +39,7 @@
   let isUploading = $state(false)
   let uploadingStatus = $state('📤')
   let rerenderPastDrawings = $state(false)
+  let sound = $state(true)
 
   const symmetrySettings = [
     {
@@ -190,6 +193,7 @@
         thinning: drawingState.thinning,
         smoothing: drawingState.smoothing,
         streamline: drawingState.streamline,
+        // @ts-ignore
         taperStart: drawingState.taperStart,
         taperEnd: drawingState.taperEnd,
         simulatePressure: !hasRealPressure,
@@ -440,6 +444,10 @@
       <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
       <button onclick={openPostDialog}>📤</button>
     </div>
+
+    <!-- {#if sound}
+      <SoundGenerator bind:drawingState />
+    {/if} -->
   </div>
 </div>
 
@@ -447,15 +455,19 @@
   <div id="pastDrawings">
     {#if localStorage.getItem('savedDrawings')}
       {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
-        <svg
-          viewBox="0 0 {size} {size}"
-          class="past-svg"
-          style="border:1px solid #ddd; border-radius:6px;"
+        <button
+          style="padding: 0; border: none; background: none; cursor: pointer;"
         >
-          {#each drawing.strokes as d}
-            <path {d} fill={drawingState.color} fill-rule="nonzero" />
-          {/each}
-        </svg>
+          <svg
+            viewBox="0 0 {size} {size}"
+            class="past-svg"
+            style="border:1px solid #ddd; border-radius:6px;"
+          >
+            {#each drawing.strokes as d}
+              <path {d} fill={drawingState.color} fill-rule="nonzero" />
+            {/each}
+          </svg>
+        </button>
       {/each}
     {/if}
   </div>

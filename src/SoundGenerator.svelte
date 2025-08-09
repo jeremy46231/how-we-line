@@ -1,10 +1,5 @@
 <script>
-  import { onDestroy } from 'svelte'
-  let unsub
-  let sharedColor = '#000'
-  unsub = activeColor.subscribe((c) => (sharedColor = c))
-  onDestroy(() => unsub && unsub())
-
+  let { drawingState = $bindable() } = $props();
   let audioCtx
   let isPlaying = false
 
@@ -41,8 +36,6 @@
       gain: null,
     },
   ]
-
-  // (Removed animated chord lines; simpler mechanical wheel look.)
 
   let masterGain
 
@@ -99,6 +92,8 @@
     v.freq = voiceValue
     if (v.osc)
       v.osc.frequency.setTargetAtTime(voiceValue, audioCtx.currentTime, 0.015)
+    
+    drawingState.voices = voices;
   }
 
   function setVoiceVol(index, voiceValue) {
@@ -118,7 +113,7 @@
   {#each voices as v, i}
     <div
       class="wheel"
-      on:pointerdown={() => {
+      onpointerdown={() => {
         if (!isPlaying) togglePlay()
       }}
     >
@@ -127,7 +122,7 @@
         min={v.range[0]}
         max={v.range[1]}
         value={v.freq}
-        on:input={(event) => setVoiceFreq(i, event.target.value)}
+        oninput={(event) => setVoiceFreq(i, event.target.value)}
       />
     </div>
   {/each}
