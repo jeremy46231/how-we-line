@@ -34,6 +34,9 @@
   )
 
   let isDrawing = $state(false)
+  let isUploading = $state(false)
+  let uploadingStatus = $state('📤')
+  let rerenderPastDrawings = $state(false)
 
   const symmetrySettings = [
     {
@@ -276,6 +279,8 @@
           JSON.stringify([{ id: drawingState.id, strokes: strokePaths }])
         )
       }
+      // change the value of rerenderpastdrawings so that the {#key} block causes it to re-render
+      rerenderPastDrawings = !rerenderPastDrawings
     } catch (err) {}
   }
 
@@ -291,7 +296,7 @@
   }
   function clearPastDrawings() {
     localStorage.removeItem('savedDrawings')
-    document.getElementById('pastDrawings').innerHTML = ''
+    rerenderPastDrawings = !rerenderPastDrawings
   }
   function openPostDialog() {
     const svgString = getSvgString()
@@ -438,21 +443,23 @@
   </div>
 </div>
 
-<div id="pastDrawings">
-  {#if localStorage.getItem('savedDrawings')}
-    {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
-      <svg
-        viewBox="0 0 {size} {size}"
-        class="past-svg"
-        style="border:1px solid #ddd; border-radius:6px;"
-      >
-        {#each drawing.strokes as d}
-          <path {d} fill={drawingState.color} fill-rule="nonzero" />
-        {/each}
-      </svg>
-    {/each}
-  {/if}
-</div>
+{#key rerenderPastDrawings}
+  <div id="pastDrawings">
+    {#if localStorage.getItem('savedDrawings')}
+      {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
+        <svg
+          viewBox="0 0 {size} {size}"
+          class="past-svg"
+          style="border:1px solid #ddd; border-radius:6px;"
+        >
+          {#each drawing.strokes as d}
+            <path {d} fill={drawingState.color} fill-rule="nonzero" />
+          {/each}
+        </svg>
+      {/each}
+    {/if}
+  </div>
+{/key}
 
 <PostDialog bind:this={postDialog} />
 
