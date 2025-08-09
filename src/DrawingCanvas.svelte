@@ -152,6 +152,10 @@
     if (isAnimating) return
     strokes.length = 0
   }
+  function undo() {
+    if (isAnimating) return
+    strokes.pop()
+  }
 
   /** @param {number} ms */
   async function sleep(ms) {
@@ -186,35 +190,6 @@
 </script>
 
 <div class="canvas-wrap">
-  <div class="controls">
-    <label>
-      Thickness
-      <input type="range" min="1" max="80" step="1" bind:value={options.size} />
-    </label>
-
-    <label>
-      Expressiveness
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        bind:value={options.thinning}
-        title="How much stroke width varies with pressure (0 = uniform, 1 = full variation)"
-      />
-    </label>
-
-    <label>
-      Color
-      <input type="color" bind:value={color} />
-    </label>
-
-    <button onclick={clear}>Clear</button>
-    <div style="margin-left:8px; font-size:0.9rem; color:#666;">
-      Strokes: {strokes.length}
-    </div>
-  </div>
-
   <svg
     bind:this={svgEl}
     width={size}
@@ -231,10 +206,34 @@
       <path {d} fill={color} fill-rule="nonzero" />
     {/each}
   </svg>
-</div>
 
-<button onclick={animate}>Animate</button>
-{isAnimating ? 'Animating!' : 'not animating.'}
+  <div class="controls">
+    <label>
+      <!-- Thickness -->
+      <input type="range" min="1" max="80" step="1" bind:value={options.size} />
+    </label>
+
+    <label>
+      <!-- Expressiveness -->
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        bind:value={options.thinning}
+        title="How much stroke width varies with pressure (0 = uniform, 1 = full variation)"
+      />
+    </label>
+
+    <label>
+      <!-- Color -->
+      <input type="color" bind:value={color} />
+    </label>
+
+    <button onclick={clear}>🚫</button>
+    <button onclick={undo}>↩️</button>
+  </div>
+</div>
 
 <style>
   .canvas-wrap {
