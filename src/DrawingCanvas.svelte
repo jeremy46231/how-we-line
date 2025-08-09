@@ -17,12 +17,12 @@
   let backgroundColor = $state('#ffffff')
 
   const symmetrySettings = [
-    { // no symmetry
-      copies: [
-        { angle: 0, reflect: false }
-      ]
+    {
+      // no symmetry
+      copies: [{ angle: 0, reflect: false }],
     },
-    { // 8-way symmetry
+    {
+      // 8-way symmetry
       copies: [
         { angle: 0, reflect: false },
         { angle: 45, reflect: false },
@@ -31,46 +31,51 @@
         { angle: 180, reflect: false },
         { angle: 225, reflect: false },
         { angle: 270, reflect: false },
-        { angle: 315, reflect: false }
-      ]
+        { angle: 315, reflect: false },
+      ],
     },
-    { // 6-way symmetry
+    {
+      // 6-way symmetry
       copies: [
         { angle: 0, reflect: false },
         { angle: 60, reflect: false },
         { angle: 120, reflect: false },
         { angle: 180, reflect: false },
         { angle: 240, reflect: false },
-        { angle: 300, reflect: false }
-      ]
+        { angle: 300, reflect: false },
+      ],
     },
-    { // 4-way symmetry
+    {
+      // 4-way symmetry
       copies: [
         { angle: 0, reflect: false },
         { angle: 90, reflect: false },
         { angle: 180, reflect: false },
         { angle: 270, reflect: false },
-      ]
+      ],
     },
-    { // 3-way symmetry
+    {
+      // 3-way symmetry
       copies: [
         { angle: 0, reflect: false },
         { angle: 120, reflect: false },
         { angle: 240, reflect: false },
-      ]
+      ],
     },
-    { // 2-way symmetry over the vertical axis
+    {
+      // 2-way symmetry over the vertical axis
       copies: [
         { angle: 0, reflect: false },
         { angle: 0, reflect: true },
-      ]
+      ],
     },
-    { // 2-way symmetry over the horizontal axis
+    {
+      // 2-way symmetry over the horizontal axis
       copies: [
         { angle: 0, reflect: false },
         { angle: 180, reflect: true },
-      ]
-    }
+      ],
+    },
   ]
   let symmetry = $state(1)
   let currentSymmetry = $derived.by(() => symmetrySettings[symmetry])
@@ -248,7 +253,11 @@
       // Ignore if focused element is an input to avoid interfering with native editing
       const ae = document.activeElement
       if (ae && ae.tagName === 'INPUT') return
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      if (
+        (e.metaKey || e.ctrlKey) &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === 'z'
+      ) {
         e.preventDefault()
         undo()
       }
@@ -320,7 +329,7 @@
     class="drawing-canvas-svg"
     bind:this={svgEl}
     viewBox="0 0 {size} {size}"
-  style="border:1px solid #ddd; border-radius:6px; background:{backgroundColor};"
+    style="border:1px solid #ddd; border-radius:6px; background:{backgroundColor};"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
@@ -353,7 +362,12 @@
 
     <div class="controls-buttons">
       <input type="color" bind:value={color} disabled={isAnimating} />
-  <input type="color" bind:value={backgroundColor} disabled={isAnimating} title="Background color" />
+      <input
+        type="color"
+        bind:value={backgroundColor}
+        disabled={isAnimating}
+        title="Background color"
+      />
       <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
       <button onclick={clear} disabled={isAnimating}>🚫</button>
       <button onclick={undo} disabled={isAnimating}>↩️</button>
@@ -365,7 +379,9 @@
 
 <div id="pastDrawings">
   {#if localStorage.getItem('pastDrawings')}
-    {#each JSON.parse(localStorage.getItem('pastDrawings')).slice(-6).reverse() as strokePaths}
+    {#each JSON.parse(localStorage.getItem('pastDrawings'))
+      .slice(-6)
+      .reverse() as strokePaths}
       <svg
         viewBox="0 0 {size} {size}"
         class="past-svg"
