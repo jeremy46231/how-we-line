@@ -107,7 +107,7 @@
     <button
       type="button"
       onclick={() => dialog.close()}
-      disabled={!isUploading}
+      disabled={isUploading}
     >
       ❌
     </button>

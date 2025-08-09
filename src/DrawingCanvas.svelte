@@ -426,10 +426,11 @@
         title="Background color"
       />
       <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
-      <button onclick={clear} disabled={isAnimating}>🚫</button>
-      <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
+      <span style="width: 1rem;"/>
+      <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
+      <button onclick={clear} disabled={isAnimating}>🚫</button>
       <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
       <button onclick={openPostDialog}>📤</button>
     </div>
