@@ -7,11 +7,23 @@
 
   /** @type {SVGSVGElement} */
   let svgEl
-  /** @type {Array<{ points: Array<Point> }>} */
+  /** @type {{ points: Point[] }[]} */
   let strokes = $state([])
 
   let isDrawing = $state(false)
   let color = $state('#111111')
+
+
+  // Usually the same thing as strokes, but when animating, changes to that
+  let isAnimating = $state(false)
+  /** @type {{ points: Point[] }[]} */
+  let animationStrokes = $state([])
+  let renderedStrokes = $derived.by(() => {
+    if (isAnimating) {
+      return animationStrokes
+    }
+    return strokes
+  })
 
   // stroke options
   let options = $state({
@@ -73,8 +85,7 @@
   // Derived array of path "d" values, one per stroke
   /** @type {string[]} */
   const strokePaths = $derived.by(() =>
-    strokes.flatMap((s) => {
-      console.log(s)
+    renderedStrokes.flatMap((s) => {
       // check the first 10 points for a pressure other than 0, .5, or 1 (common defaults)
       const hasRealPressure = s.points.slice(0, 10).some((p) => ![undefined, 0, 0.5, 1].includes(p[2]))
       const stroke = getStroke(s.points, {
@@ -105,6 +116,7 @@
 
   /** @param {PointerEvent} e */
   function handlePointerDown(e) {
+    if (isAnimating) return
     e.preventDefault()
     isDrawing = true
     try {
@@ -118,6 +130,7 @@
 
   /** @param {PointerEvent} e */
   function handlePointerMove(e) {
+    if (isAnimating) return
     if (!isDrawing) return
     const stroke = strokes[strokes.length - 1]
     if (!stroke) return
@@ -126,6 +139,7 @@
 
   /** @param {PointerEvent} e */
   function handlePointerUp(e) {
+    if (isAnimating) return
     if (!isDrawing) return
     isDrawing = false
     try {
@@ -135,9 +149,32 @@
 
   // helper controls
   function clear() {
+    if (isAnimating) return
     strokes.length = 0
   }
 
+  /** @param {number} ms */
+  async function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+  async function animate() {
+    if (isAnimating) return
+    console.log('Animating...')
+    isAnimating = true
+    animationStrokes.length = 0
+    for (const stroke of strokes) {
+      console.log('stroke')
+      animationStrokes.push({ points: [] })
+      for (const point of stroke.points) {
+        const [x, y, pressure] = point
+        animationStrokes[animationStrokes.length - 1].points.push([x, y, pressure])
+        await sleep(15)
+      }
+      await sleep(250)
+    }
+    isAnimating = false
+    console.log('Animation complete')
+  }
   // small convenience: export a method usable by a parent via component ref
   export function getSvgString() {
     // Build SVG containing all strokes with their original colors
@@ -195,6 +232,9 @@
     {/each}
   </svg>
 </div>
+
+<button onclick={animate}>Animate</button>
+{isAnimating ? 'Animating!' : 'not animating.'}
 
 <style>
   .canvas-wrap {
