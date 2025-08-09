@@ -12,6 +12,8 @@
 
   let isDrawing = $state(false)
   let color = $state('#111111')
+  // Background color of the canvas
+  let backgroundColor = $state('#ffffff')
 
   const symmetrySettings = [
     { // no symmetry
@@ -280,7 +282,8 @@
     const paths = strokePaths
       .map((d) => `<path d="${d}" fill="${color}" fill-rule="nonzero"/>`)
       .join('')
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`
+    const bg = `<rect width="100%" height="100%" fill="${backgroundColor}" />`
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${bg}${paths}</svg>`
   }
   function downloadSvg() {
     const svgString = getSvgString()
@@ -301,7 +304,7 @@
     class="drawing-canvas-svg"
     bind:this={svgEl}
     viewBox="0 0 {size} {size}"
-    style="border:1px solid #ddd; border-radius:6px;"
+  style="border:1px solid #ddd; border-radius:6px; background:{backgroundColor};"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
@@ -334,6 +337,7 @@
 
     <div class="controls-buttons">
       <input type="color" bind:value={color} disabled={isAnimating} />
+  <input type="color" bind:value={backgroundColor} disabled={isAnimating} title="Background color" />
       <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
       <button onclick={clear} disabled={isAnimating}>🚫</button>
       <button onclick={undo} disabled={isAnimating}>↩️</button>
