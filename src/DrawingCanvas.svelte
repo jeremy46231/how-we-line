@@ -1,15 +1,16 @@
 <script>
-  import { getStroke } from "perfect-freehand";
+  import { getStroke } from 'perfect-freehand'
 
-  // component prop (Svelte 5 $props rune)
-  let { size = 500 } = $props();
+  let { size = 500 } = $props()
 
-  // reactive state (Svelte 5 $state rune)
-  let svgEl;
-  // Each stroke: { points: [ [x,y,pressure], ... ], color }
-  let strokes = $state([]);
-  let isDrawing = $state(false);
-  let color = $state("#111111");
+  // reactive state
+  /** @type {SVGSVGElement} */
+  let svgEl
+  /** @type {Array<{ points: Array<[x: number, y: number] | [x: number, y: number, pressure: number]> }>} */
+  let strokes = $state([])
+
+  let isDrawing = $state(false)
+  let color = $state('#111111')
 
   // stroke options
   let options = $state({
@@ -19,100 +20,113 @@
     streamline: 0.5,
     taperStart: 0,
     taperEnd: 0,
-  });
+  })
 
   // Convert the polygon returned by getStroke into an SVG path.
+  /**
+   * @param {(readonly number[])[]} stroke Outline polygon from perfect-freehand
+   * @param {boolean} [closed=true]
+   * @returns {string}
+   */
   function getSvgPathFromStroke(stroke, closed = true) {
-    if (!stroke || stroke.length === 0) return "";
+    if (!stroke || stroke.length === 0) return ''
 
     const d = stroke.reduce(
       (acc, [x0, y0], i, arr) => {
-        const [x1, y1] = arr[(i + 1) % arr.length];
+        const [x1, y1] = arr[(i + 1) % arr.length]
         acc.push(
           x0.toFixed(2),
           y0.toFixed(2),
           ((x0 + x1) / 2).toFixed(2),
-          ((y0 + y1) / 2).toFixed(2),
-        );
-        return acc;
+          ((y0 + y1) / 2).toFixed(2)
+        )
+        return acc
       },
-      ["M", stroke[0][0].toFixed(2), stroke[0][1].toFixed(2), "Q"],
-    );
+      ['M', stroke[0][0].toFixed(2), stroke[0][1].toFixed(2), 'Q']
+    )
 
-    if (closed) d.push("Z");
-    return d.join(" ");
+    if (closed) d.push('Z')
+    return d.join(' ')
   }
 
   // Derived array of path "d" values, one per stroke
+  /** @type {string[]} */
   const strokePaths = $derived.by(() =>
-    strokes.map((s) => getSvgPathFromStroke(getStroke(s.points, options))),
-  );
+    strokes.map((s) => getSvgPathFromStroke(getStroke(s.points, options)))
+  )
 
   // map pointer event to SVG-local coordinates + pressure
+  /**
+   * Convert pointer event to local coords.
+   * Returns [x,y] if real pressure not available (lets library simulate),
+   * or [x,y,pressure] if pressure > 0.
+   * @param {PointerEvent} e
+   * @returns {[x: number, y: number] | [x: number, y: number, pressure: number]}
+   */
   function toLocalPoint(e) {
-    const r = svgEl.getBoundingClientRect();
-    const x = e.clientX - r.left;
-    const y = e.clientY - r.top;
-    // pointer.pressure is 0..1 (mouse often 0) — fall back to 0.5
-    const p =
-      typeof e.pressure === "number" && e.pressure > 0 ? e.pressure : 0.5;
-    return [x, y, p];
+    const r = svgEl.getBoundingClientRect()
+    const x = e.clientX - r.left
+    const y = e.clientY - r.top
+    if (typeof e.pressure === 'number' && e.pressure > 0) {
+      return /** @type {[number, number, number]} */ ([x, y, e.pressure])
+    }
+    return /** @type {[number, number]} */ ([x, y])
   }
 
+  /** @param {PointerEvent} e */
   function handlePointerDown(e) {
-    e.preventDefault();
-    isDrawing = true;
+    e.preventDefault()
+    isDrawing = true
     try {
-      svgEl.setPointerCapture(e.pointerId);
+      svgEl.setPointerCapture(e.pointerId)
     } catch (err) {}
     // start a new stroke with current color snapshot
-    const stroke = { points: [], color: color };
-    stroke.points.push(toLocalPoint(e));
-    strokes.push(stroke);
+    const stroke = { points: [] }
+    stroke.points.push(toLocalPoint(e))
+    strokes.push(stroke)
   }
 
+  /** @param {PointerEvent} e */
   function handlePointerMove(e) {
-    if (!isDrawing) return;
-    const stroke = strokes[strokes.length - 1];
-    if (!stroke) return;
-    stroke.points.push(toLocalPoint(e));
+    if (!isDrawing) return
+    const stroke = strokes[strokes.length - 1]
+    if (!stroke) return
+    stroke.points.push(toLocalPoint(e))
   }
 
+  /** @param {PointerEvent} e */
   function handlePointerUp(e) {
-    if (!isDrawing) return;
-    isDrawing = false;
+    if (!isDrawing) return
+    isDrawing = false
     try {
-      svgEl.releasePointerCapture(e.pointerId);
+      svgEl.releasePointerCapture(e.pointerId)
     } catch (err) {}
   }
 
   // helper controls
   function clear() {
-    strokes.length = 0;
+    strokes.length = 0
   }
 
   // small convenience: export a method usable by a parent via component ref
   export function getSvgString() {
     // Build SVG containing all strokes with their original colors
     const paths = strokePaths
-      .map(
-        (d, i) =>
-          `<path d="${d}" fill="${strokes[i].color}" fill-rule="nonzero"/>`,
-      )
-      .join("");
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`;
+      .map((d) => `<path d="${d}" fill="${color}" fill-rule="nonzero"/>`)
+      .join('')
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`
   }
 </script>
 
 <div class="canvas-wrap">
   <div class="controls">
     <label
-      >Thickness
+      > Thickness
       <input type="range" min="1" max="80" step="1" bind:value={options.size} />
     </label>
 
     <label
-      >Expressiveness
+      > Expressiveness
       <input
         type="range"
         min="0"
@@ -124,7 +138,7 @@
     </label>
 
     <label
-      >Color
+      > Color
       <input type="color" bind:value={color} />
     </label>
 
@@ -146,8 +160,8 @@
     onpointerleave={handlePointerUp}
   >
     <!-- render each stroke as its own filled path -->
-    {#each strokePaths as d, i}
-      <path {d} fill={strokes[i].color} fill-rule="nonzero" />
+    {#each strokePaths as d}
+      <path {d} fill={color} fill-rule="nonzero" />
     {/each}
   </svg>
 </div>
