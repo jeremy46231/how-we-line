@@ -7,7 +7,7 @@
   let { size = 500, initialDrawingState = undefined } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
-  /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number }} DrawingState */
+  /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number, size: number, thinning: number, smoothing: number, streamline: number, taperStart: number, taperEnd: number }} DrawingState */
 
   /** @type {SVGSVGElement} */
   let svgEl
@@ -24,6 +24,12 @@
       color: '#111111',
       backgroundColor: '#ffffff',
       symmetry: 1,
+      size: 8,
+      thinning: 0.6,
+      smoothing: 0.5,
+      streamline: 0.5,
+      taperStart: 0,
+      taperEnd: 0,
     }
   )
 
@@ -112,16 +118,6 @@
     return drawingState.strokes
   })
 
-  // stroke options
-  let options = $state({
-    size: 8,
-    thinning: 0.6,
-    smoothing: 0.5,
-    streamline: 0.5,
-    taperStart: 0,
-    taperEnd: 0,
-  })
-
   /**
    * Convert the polygon returned by getStroke into an SVG path.
    * @param {[number, number][]} stroke Outline polygon from perfect-freehand
@@ -190,7 +186,12 @@
       /** @type {[number, number][]} */
       // @ts-ignore
       const stroke = getStroke(s.points, {
-        ...options,
+        size: drawingState.size,
+        thinning: drawingState.thinning,
+        smoothing: drawingState.smoothing,
+        streamline: drawingState.streamline,
+        taperStart: drawingState.taperStart,
+        taperEnd: drawingState.taperEnd,
         simulatePressure: !hasRealPressure,
       })
 
@@ -406,7 +407,7 @@
       min="1"
       max="30"
       step="1"
-      bind:value={options.size}
+      bind:value={drawingState.size}
       disabled={isAnimating}
     />
     <input
@@ -414,7 +415,7 @@
       min="0"
       max="1"
       step="0.05"
-      bind:value={options.thinning}
+      bind:value={drawingState.thinning}
       disabled={isAnimating}
     />
 
@@ -432,7 +433,7 @@
       />
       <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
       <button onclick={animate} disabled={isAnimating}>▶️</button>
-      <span style="width: 1rem;"/>
+      <span style="width: 1rem;"></span>
       <button onclick={undo} disabled={isAnimating}>↩️</button>
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
       <button onclick={clear} disabled={isAnimating}>🚫</button>
