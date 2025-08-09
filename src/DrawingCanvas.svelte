@@ -13,7 +13,6 @@
   let isDrawing = $state(false)
   let color = $state('#111111')
 
-
   // Usually the same thing as strokes, but when animating, changes to that
   let isAnimating = $state(false)
   /** @type {{ points: Point[] }[]} */
@@ -63,7 +62,7 @@
 
   /**
    * Rotate a stroke around the center by a given number of degrees
-  * @param {number[][]} stroke
+   * @param {number[][]} stroke
    * @param {number} degrees
    * @param {number} [cx=size/2] Optional center x (defaults to canvas center)
    * @param {number} [cy=size/2] Optional center y (defaults to canvas center)
@@ -87,10 +86,12 @@
   const strokePaths = $derived.by(() =>
     renderedStrokes.flatMap((s) => {
       // check the first 10 points for a pressure other than 0, .5, or 1 (common defaults)
-      const hasRealPressure = s.points.slice(0, 10).some((p) => ![undefined, 0, 0.5, 1].includes(p[2]))
+      const hasRealPressure = s.points
+        .slice(0, 10)
+        .some((p) => ![undefined, 0, 0.5, 1].includes(p[2]))
       const stroke = getStroke(s.points, {
         ...options,
-        simulatePressure: !hasRealPressure
+        simulatePressure: !hasRealPressure,
       })
       const angles = [0, 45, 90, 135, 180, 225, 270, 315]
       const paths = angles.map((angle) => {
@@ -171,7 +172,11 @@
       animationStrokes.push({ points: [] })
       for (const point of stroke.points) {
         const [x, y, pressure] = point
-        animationStrokes[animationStrokes.length - 1].points.push([x, y, pressure])
+        animationStrokes[animationStrokes.length - 1].points.push([
+          x,
+          y,
+          pressure,
+        ])
         await sleep(15)
       }
       await sleep(250)
@@ -187,13 +192,25 @@
       .join('')
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${paths}</svg>`
   }
+  function downloadSvg() {
+    const svgString = getSvgString()
+    const blob = new Blob([svgString], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'how-we-line.svg'
+    a.click()
+
+    URL.revokeObjectURL(url)
+  }
 </script>
 
-<div class="canvas-wrap">
+<div class="drawing-canvas">
   <svg
+    class="drawing-canvas-svg"
     bind:this={svgEl}
-    width={size}
-    height={size}
+    viewBox="0 0 {size} {size}"
     style="border:1px solid #ddd; border-radius:6px;"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
@@ -208,42 +225,48 @@
   </svg>
 
   <div class="controls">
-    <label>
-      <!-- Thickness -->
-      <input type="range" min="1" max="80" step="1" bind:value={options.size} />
-    </label>
-
-    <label>
-      <!-- Expressiveness -->
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.05"
-        bind:value={options.thinning}
-        title="How much stroke width varies with pressure (0 = uniform, 1 = full variation)"
-      />
-    </label>
-
-    <label>
-      <!-- Color -->
+    <input type="range" min="1" max="80" step="1" bind:value={options.size} />
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.05"
+      bind:value={options.thinning}
+    />
+    
+    <div class="controls-buttons">
       <input type="color" bind:value={color} />
-    </label>
-
-    <button onclick={clear}>🚫</button>
-    <button onclick={undo}>↩️</button>
+      <button onclick={clear}>🚫</button>
+      <button onclick={undo}>↩️</button>
+      <button onclick={animate}>▶️</button>
+      <button onclick={downloadSvg}>💾</button>
+    </div>
   </div>
 </div>
 
 <style>
-  .canvas-wrap {
+  .drawing-canvas {
+    width: 100%;
+    max-width: 600px;
     display: inline-block;
   }
+  .drawing-canvas-svg {
+    width: 100%;
+  }
   .controls {
-    margin-bottom: 8px;
     display: flex;
     gap: 8px;
-    align-items: center;
+    width: 100%;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+  }
+  .controls input[type='range'] {
+    flex: 1 1 60px;
+  }
+  .controls-buttons {
+    flex: 0 0 min-content;
+    display: flex;
+    gap: 4px;
   }
   svg {
     background: #fff;
