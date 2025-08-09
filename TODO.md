@@ -1,8 +1,8 @@
 ## features to add:
-- Symmetry
-- Sound generator thingy
-- General UI stuff
+- [x] Symmetry
+- [ ] Sound generator
+- [x] General UI stuff
 
 ## features that could be implemented:
-- add replaying of drawings
-- add customization of symmetry
+- [x] add replaying of drawings
+- [ ] add customization of symmetry
