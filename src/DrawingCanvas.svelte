@@ -256,19 +256,19 @@
 
         const mostRecentDrawingId = currentlySavedDrawings.reverse()[0].id;
 
-        if (drawingId === mostRecentDrawingId) currentlySavedDrawings.pop();
+        if (drawingState.id === mostRecentDrawingId) currentlySavedDrawings.pop();
 
         localStorage.setItem(
           'savedDrawings',
           JSON.stringify([
             ...currentlySavedDrawings,
-            { id: drawingId, strokes: strokePaths },
+            { id: drawingState.id, strokes: strokePaths },
           ])
         )
       } else {
         localStorage.setItem(
           'savedDrawings',
-          JSON.stringify([{ id: drawingId, strokes: strokePaths }])
+          JSON.stringify([{ id: drawingState.id, strokes: strokePaths }])
         )
       }
     } catch (err) {}
@@ -445,9 +445,6 @@
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
       <button onclick={uploadDrawing} disabled={isAnimating || isUploading}>{uploadingStatus}</button>
     </div>
-    {#if uploadMessage}
-      <div class="status">{uploadMessage}</div>
-    {/if}
   </div>
 </div>
 
