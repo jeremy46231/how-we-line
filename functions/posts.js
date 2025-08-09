@@ -8,6 +8,12 @@ export async function onRequest(context) {
         return new Response('File is too large', { status: 413 })
       }
 
+      try {
+        JSON.parse(json)
+      } catch {
+        return new Response('Invalid JSON', { status: 400 })
+      }
+
       const key = `entry:${Date.now()}`
       await context.env.KV.put(key, json, {
         expirationTtl: 86400,
