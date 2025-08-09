@@ -5,4 +5,4 @@
 
 ## features that could be implemented:
 - [x] add replaying of drawings
-- [ ] add customization of symmetry
+- [x] add customization of symmetry

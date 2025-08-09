@@ -2,19 +2,26 @@
   import { getStroke } from 'perfect-freehand'
   import { onMount } from 'svelte'
 
-  let { size = 500 } = $props()
+  let { size = 500, initialDrawingState } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
 
   /** @type {SVGSVGElement} */
   let svgEl
-  /** @type {{ points: Point[] }[]} */
-  let strokes = $state([])
+
+  /**
+   * @type {{ strokes: { points: Point[] }[], color: string, backgroundColor: string }}
+   */
+  let drawingState = $state(
+    initialDrawingState ?? {
+      strokes: /** @type {{ points: Point[] }[]} */ [],
+      color: '#111111',
+      backgroundColor: '#ffffff',
+      symmetry: 1,
+    }
+  )
 
   let isDrawing = $state(false)
-  let color = $state('#111111')
-  // Background color of the canvas
-  let backgroundColor = $state('#ffffff')
 
   const symmetrySettings = [
     {
@@ -77,11 +84,12 @@
       ],
     },
   ]
-  let symmetry = $state(1)
-  let currentSymmetry = $derived.by(() => symmetrySettings[symmetry])
+  let currentSymmetry = $derived.by(
+    () => symmetrySettings[drawingState.symmetry]
+  )
   function incrementSymmetry() {
-    symmetry++
-    symmetry %= symmetrySettings.length
+    drawingState.symmetry++
+    drawingState.symmetry %= symmetrySettings.length
   }
 
   // Usually the same thing as strokes, but when animating, changes to that
@@ -92,7 +100,7 @@
     if (isAnimating) {
       return animationStrokes
     }
-    return strokes
+    return drawingState.strokes
   })
 
   // stroke options
@@ -215,14 +223,14 @@
     // start a new stroke
     const stroke = { points: [] }
     stroke.points.push(toLocalPoint(e))
-    strokes.push(stroke)
+    drawingState.strokes.push(stroke)
   }
 
   /** @param {PointerEvent} e */
   function handlePointerMove(e) {
     if (isAnimating) return
     if (!isDrawing) return
-    const stroke = strokes[strokes.length - 1]
+    const stroke = drawingState.strokes[drawingState.strokes.length - 1]
     if (!stroke) return
     stroke.points.push(toLocalPoint(e))
   }
@@ -240,11 +248,11 @@
   // helper controls
   function clear() {
     if (isAnimating) return
-    strokes.length = 0
+    drawingState.strokes.length = 0
   }
   function undo() {
     if (isAnimating) return
-    strokes.pop()
+    drawingState.strokes.pop()
   }
 
   // Keyboard shortcuts (Ctrl/Cmd + Z for undo)
@@ -275,7 +283,7 @@
     isAnimating = true
     animationStrokes.length = 0
     // @ts-ignore
-    animationStrokes = $state.snapshot(strokes)
+    animationStrokes = $state.snapshot(drawingState.strokes)
     while (animationStrokes.length > 0) {
       const stroke = animationStrokes[0]
       while (stroke.points.length > 0) {
@@ -286,7 +294,7 @@
     }
     animationStrokes.length = 0
     await sleep(250)
-    for (const stroke of strokes) {
+    for (const stroke of drawingState.strokes) {
       animationStrokes.push({ points: [] })
       for (const point of stroke.points) {
         const [x, y, pressure] = point
@@ -305,9 +313,12 @@
   export function getSvgString() {
     // Build SVG containing all strokes with their original colors
     const paths = strokePaths
-      .map((d) => `<path d="${d}" fill="${color}" fill-rule="nonzero"/>`)
+      .map(
+        (d) =>
+          `<path d="${d}" fill="${drawingState.color}" fill-rule="nonzero"/>`
+      )
       .join('')
-    const bg = `<rect width="100%" height="100%" fill="${backgroundColor}" />`
+    const bg = `<rect width="100%" height="100%" fill="${drawingState.backgroundColor}" />`
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${bg}${paths}</svg>`
   }
   function downloadSvg() {
@@ -329,7 +340,7 @@
     class="drawing-canvas-svg"
     bind:this={svgEl}
     viewBox="0 0 {size} {size}"
-    style="border:1px solid #ddd; border-radius:6px; background:{backgroundColor};"
+    style="border:1px solid #ddd; border-radius:6px; background:{drawingState.backgroundColor};"
     onpointerdown={handlePointerDown}
     onpointermove={handlePointerMove}
     onpointerup={handlePointerUp}
@@ -338,7 +349,7 @@
   >
     <!-- render each stroke as its own filled path -->
     {#each strokePaths as d}
-      <path {d} fill={color} fill-rule="nonzero" />
+      <path {d} fill={drawingState.color} fill-rule="nonzero" />
     {/each}
   </svg>
 
@@ -361,10 +372,14 @@
     />
 
     <div class="controls-buttons">
-      <input type="color" bind:value={color} disabled={isAnimating} />
       <input
         type="color"
-        bind:value={backgroundColor}
+        bind:value={drawingState.color}
+        disabled={isAnimating}
+      />
+      <input
+        type="color"
+        bind:value={drawingState.backgroundColor}
         disabled={isAnimating}
         title="Background color"
       />
@@ -388,7 +403,7 @@
         style="border:1px solid #ddd; border-radius:6px;"
       >
         {#each strokePaths as d}
-          <path {d} fill={color} fill-rule="nonzero" />
+          <path {d} fill={drawingState.color} fill-rule="nonzero" />
         {/each}
       </svg>
     {/each}
