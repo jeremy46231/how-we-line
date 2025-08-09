@@ -12,5 +12,8 @@
     "@sveltejs/vite-plugin-svelte": "^6.1.0",
     "svelte": "^5.37.3",
     "vite": "^7.1.0"
+  },
+  "dependencies": {
+    "perfect-freehand": "^1.2.2"
   }
 }

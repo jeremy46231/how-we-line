@@ -1,7 +1,5 @@
 <script>
-  
+  import DrawingCanvas from './DrawingCanvas.svelte'
 </script>
 
-<main>
-  hello
-</main>
+<DrawingCanvas size={600} />
