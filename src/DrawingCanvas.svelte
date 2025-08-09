@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
   import { nanoid } from 'nanoid'
   import PostDialog from './PostDialog.svelte'
+  import DrawingRenderer from './DrawingRenderer.svelte'
 
   let { size = 600, initialDrawingState = undefined } = $props()
 
@@ -263,21 +264,15 @@
 
         if (drawingState.id === mostRecentDrawingId)
           currentlySavedDrawings.pop()
-
+        // efficient snapshot of current drawing state
+        const snapshot = $state.snapshot(drawingState)
         localStorage.setItem(
           'savedDrawings',
-          JSON.stringify(
-            [
-              ...currentlySavedDrawings,
-              { id: drawingState.id, strokes: strokePaths },
-            ].slice(-6)
-          )
+          JSON.stringify([...currentlySavedDrawings, snapshot].slice(-6))
         )
       } else {
-        localStorage.setItem(
-          'savedDrawings',
-          JSON.stringify([{ id: drawingState.id, strokes: strokePaths }])
-        )
+        const snapshot = $state.snapshot(drawingState)
+        localStorage.setItem('savedDrawings', JSON.stringify([snapshot]))
       }
       // change the value of rerenderpastdrawings so that the {#key} block causes it to re-render
       rerenderPastDrawings = !rerenderPastDrawings
@@ -383,91 +378,95 @@
   }
 </script>
 
-<div class="drawing-canvas">
-  <svg
-    class="drawing-canvas-svg"
-    bind:this={svgEl}
-    viewBox="0 0 {size} {size}"
-    style="border:1px solid #ddd; border-radius:6px; background:{drawingState.backgroundColor};"
-    onpointerdown={handlePointerDown}
-    onpointermove={handlePointerMove}
-    onpointerup={handlePointerUp}
-    onpointercancel={handlePointerUp}
-    onpointerleave={handlePointerUp}
-  >
-    <!-- render each stroke as its own filled path -->
-    {#each strokePaths as d}
-      <path {d} fill={drawingState.color} fill-rule="nonzero" />
-    {/each}
-  </svg>
+<div class="canvas-wrapper">
+  <div class="drawing-canvas">
+    <svg
+      class="drawing-canvas-svg"
+      bind:this={svgEl}
+      viewBox="0 0 {size} {size}"
+      style="border:1px solid #ddd; border-radius:6px; background:{drawingState.backgroundColor};"
+      onpointerdown={handlePointerDown}
+      onpointermove={handlePointerMove}
+      onpointerup={handlePointerUp}
+      onpointercancel={handlePointerUp}
+      onpointerleave={handlePointerUp}
+    >
+      <!-- render each stroke as its own filled path -->
+      {#each strokePaths as d}
+        <path {d} fill={drawingState.color} fill-rule="nonzero" />
+      {/each}
+    </svg>
 
-  <div class="controls">
-    <input
-      type="range"
-      min="1"
-      max="30"
-      step="1"
-      bind:value={drawingState.size}
-      disabled={isAnimating}
-    />
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.05"
-      bind:value={drawingState.thinning}
-      disabled={isAnimating}
-    />
-
-    <div class="controls-buttons">
+    <div class="controls">
       <input
-        type="color"
-        bind:value={drawingState.color}
+        type="range"
+        min="1"
+        max="30"
+        step="1"
+        bind:value={drawingState.size}
         disabled={isAnimating}
       />
       <input
-        type="color"
-        bind:value={drawingState.backgroundColor}
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        bind:value={drawingState.thinning}
         disabled={isAnimating}
-        title="Background color"
       />
-      <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
-      <button onclick={animate} disabled={isAnimating}>▶️</button>
-      <span style="width: 1rem;"></span>
-      <button onclick={undo} disabled={isAnimating}>↩️</button>
-      <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
-      <button onclick={clear} disabled={isAnimating}>🚫</button>
-      <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
-      <button onclick={openPostDialog}>📤</button>
+
+      <div class="controls-buttons">
+        <input
+          type="color"
+          bind:value={drawingState.color}
+          disabled={isAnimating}
+        />
+        <input
+          type="color"
+          bind:value={drawingState.backgroundColor}
+          disabled={isAnimating}
+          title="Background color"
+        />
+        <button onclick={incrementSymmetry} disabled={isAnimating}>🪞</button>
+        <button onclick={animate} disabled={isAnimating}>▶️</button>
+        <span style="width: 1rem;"></span>
+        <button onclick={undo} disabled={isAnimating}>↩️</button>
+        <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
+        <button onclick={clear} disabled={isAnimating}>🚫</button>
+        <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
+        <button onclick={openPostDialog}>📤</button>
+      </div>
     </div>
   </div>
-</div>
 
-{#key rerenderPastDrawings}
-  <div id="pastDrawings">
-    {#if localStorage.getItem('savedDrawings')}
-      {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
-        <svg
-          viewBox="0 0 {size} {size}"
-          class="past-svg"
-          style="border:1px solid #ddd; border-radius:6px;"
-        >
-          {#each drawing.strokes as d}
-            <path {d} fill={drawingState.color} fill-rule="nonzero" />
-          {/each}
-        </svg>
-      {/each}
-    {/if}
-  </div>
-{/key}
+  {#key rerenderPastDrawings}
+    <div id="pastDrawings">
+      {#if localStorage.getItem('savedDrawings')}
+        {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
+          <DrawingRenderer
+            initialDrawingState={drawing}
+            class="past-svg"
+            width="100"
+            height="100"
+          />
+        {/each}
+      {/if}
+    </div>
+  {/key}
+</div>
 
 <PostDialog bind:this={postDialog} />
 
 <style>
+  .canvas-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
   .drawing-canvas {
-    width: 100%;
-    max-width: 600px;
-    display: inline-block;
+    width: 600px;
+    max-width: 100%;
+    flex: 0 0 auto;
   }
   .drawing-canvas-svg {
     width: 100%;
@@ -500,10 +499,16 @@
   }
 
   #pastDrawings {
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 0 0 auto;
   }
 
   @media screen and (max-width: 900px) {
+    .canvas-wrapper {
+      flex-direction: column;
+    }
     #pastDrawings {
       display: none;
     }
