@@ -2,6 +2,7 @@
   import { getStroke } from 'perfect-freehand'
   import { onMount } from 'svelte'
   import { nanoid } from 'nanoid'
+  import PostDialog from './PostDialog.svelte'
 
   let { size = 500, initialDrawingState = undefined } = $props()
 
@@ -10,6 +11,8 @@
 
   /** @type {SVGSVGElement} */
   let svgEl
+  /** @type {PostDialog} */
+  let postDialog
 
   /**
    * @type {DrawingState}
@@ -25,8 +28,6 @@
   )
 
   let isDrawing = $state(false)
-  let isUploading = $state(false)
-  let uploadingStatus = $state('📤')
 
   const symmetrySettings = [
     {
@@ -291,6 +292,10 @@
     localStorage.removeItem('savedDrawings')
     document.getElementById('pastDrawings').innerHTML = ''
   }
+  function openPostDialog() {
+    const svgString = getSvgString()
+    postDialog.open(drawingState, svgString)
+  }
 
   // Keyboard shortcuts (Ctrl/Cmd + Z for undo)
   onMount(() => {
@@ -370,31 +375,6 @@
 
     URL.revokeObjectURL(url)
   }
-
-  async function uploadDrawing() {
-    if (isAnimating || isUploading) return
-    try {
-      isUploading = true
-      uploadingStatus = '⏳'
-      // Snapshot to avoid mutation during upload
-      const snapshot = $state.snapshot(drawingState)
-      const body = JSON.stringify(snapshot)
-      if (body.length > 5 * 1024 * 1024) {
-        return
-      }
-      const res = await fetch('https://hwl.jer.app/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      })
-    } catch (err) {
-      console.error('Upload error:', err)
-      uploadingStatus = '❌'
-    } finally {
-      isUploading = false
-      uploadingStatus = '✅'
-    }
-  }
 </script>
 
 <div class="drawing-canvas">
@@ -451,9 +431,7 @@
       <button onclick={animate} disabled={isAnimating}>▶️</button>
       <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
       <button onclick={clearPastDrawings} disabled={isAnimating}>❌</button>
-      <button onclick={uploadDrawing} disabled={isAnimating || isUploading}
-        >{uploadingStatus}</button
-      >
+      <button onclick={openPostDialog}>📤</button>
     </div>
   </div>
 </div>
@@ -473,6 +451,8 @@
     {/each}
   {/if}
 </div>
+
+<PostDialog bind:this={postDialog} />
 
 <style>
   .drawing-canvas {

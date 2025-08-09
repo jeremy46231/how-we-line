@@ -38,7 +38,7 @@ export async function onRequest(context) {
 
       entries.sort((a, b) => b[0] - a[0]) // Sort by timestamp, newest first
 
-      const values = entries.map((entry) => JSON.stringify(entry[1]))
+      const values = entries.map((entry) => entry[1])
 
       return new Response(JSON.stringify(values), {
         status: 200,
