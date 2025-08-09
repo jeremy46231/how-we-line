@@ -167,10 +167,24 @@
     console.log('Animating...')
     isAnimating = true
     animationStrokes.length = 0
+    // @ts-ignore
+    animationStrokes = $state.snapshot(strokes)
+    while (animationStrokes.length > 0) {
+      const stroke = animationStrokes[0]
+      while (stroke.points.length > 0) {
+        console.log('hii')
+        stroke.points.shift()
+        await sleep(4)
+      }
+      animationStrokes.shift()
+    }
+    animationStrokes.length = 0
+    await sleep(250)
     for (const stroke of strokes) {
       console.log('stroke')
       animationStrokes.push({ points: [] })
       for (const point of stroke.points) {
+        console.log('point')
         const [x, y, pressure] = point
         animationStrokes[animationStrokes.length - 1].points.push([
           x,
@@ -179,7 +193,7 @@
         ])
         await sleep(15)
       }
-      await sleep(250)
+      await sleep(100)
     }
     isAnimating = false
     console.log('Animation complete')
@@ -225,21 +239,29 @@
   </svg>
 
   <div class="controls">
-    <input type="range" min="1" max="80" step="1" bind:value={options.size} />
+    <input
+      type="range"
+      min="1"
+      max="30"
+      step="1"
+      bind:value={options.size}
+      disabled={isAnimating}
+    />
     <input
       type="range"
       min="0"
       max="1"
       step="0.05"
       bind:value={options.thinning}
+      disabled={isAnimating}
     />
-    
+
     <div class="controls-buttons">
-      <input type="color" bind:value={color} />
-      <button onclick={clear}>🚫</button>
-      <button onclick={undo}>↩️</button>
-      <button onclick={animate}>▶️</button>
-      <button onclick={downloadSvg}>💾</button>
+      <input type="color" bind:value={color} disabled={isAnimating} />
+      <button onclick={clear} disabled={isAnimating}>🚫</button>
+      <button onclick={undo} disabled={isAnimating}>↩️</button>
+      <button onclick={animate} disabled={isAnimating}>▶️</button>
+      <button onclick={downloadSvg} disabled={isAnimating}>💾</button>
     </div>
   </div>
 </div>
