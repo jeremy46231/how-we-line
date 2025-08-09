@@ -1,11 +1,12 @@
 <script>
   import { getStroke } from 'perfect-freehand'
   import { onMount } from 'svelte'
+  import { nanoid } from 'nanoid'
 
   let { size = 500, initialDrawingState = undefined } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
-  /** @typedef {{ strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number }} DrawingState */
+  /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number }} DrawingState */
 
   /** @type {SVGSVGElement} */
   let svgEl
@@ -15,7 +16,8 @@
    */
   let drawingState = $state(
     initialDrawingState ?? {
-      strokes: /** @type {{ points: Point[] }[]} */ [],
+      id: nanoid(),
+      strokes: [],
       color: '#111111',
       backgroundColor: '#ffffff',
       symmetry: 1,
@@ -245,6 +247,30 @@
     isDrawing = false
     try {
       svgEl.releasePointerCapture(e.pointerId)
+
+      // auto save the current drawing to localStorage
+      if (localStorage.getItem('savedDrawings')) {
+        const currentlySavedDrawings = JSON.parse(
+          localStorage.getItem('savedDrawings')
+        )
+
+        const mostRecentDrawingId = currentlySavedDrawings.reverse()[0].id;
+
+        if (drawingId === mostRecentDrawingId) currentlySavedDrawings.pop();
+
+        localStorage.setItem(
+          'savedDrawings',
+          JSON.stringify([
+            ...currentlySavedDrawings,
+            { id: drawingId, strokes: strokePaths },
+          ])
+        )
+      } else {
+        localStorage.setItem(
+          'savedDrawings',
+          JSON.stringify([{ id: drawingId, strokes: strokePaths }])
+        )
+      }
     } catch (err) {}
   }
 
@@ -252,6 +278,7 @@
   function clear() {
     if (isAnimating) return
     drawingState.strokes.length = 0
+    drawingState.id = nanoid()
   }
   function undo() {
     if (isAnimating) return
@@ -425,16 +452,16 @@
 </div>
 
 <div id="pastDrawings">
-  {#if localStorage.getItem('pastDrawings')}
-    {#each JSON.parse(localStorage.getItem('pastDrawings'))
+  {#if localStorage.getItem('savedDrawings')}
+    {#each JSON.parse(localStorage.getItem('savedDrawings'))
       .slice(-6)
-      .reverse() as strokePaths}
+      .reverse() as drawing}  
       <svg
         viewBox="0 0 {size} {size}"
         class="past-svg"
         style="border:1px solid #ddd; border-radius:6px;"
       >
-        {#each strokePaths as d}
+        {#each drawing.strokes as d}
           <path {d} fill={drawingState.color} fill-rule="nonzero" />
         {/each}
       </svg>
