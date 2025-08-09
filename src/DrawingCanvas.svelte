@@ -4,7 +4,7 @@
   import { nanoid } from 'nanoid'
   import PostDialog from './PostDialog.svelte'
 
-  let { size = 500, initialDrawingState = undefined } = $props()
+  let { size = 600, initialDrawingState = undefined } = $props()
 
   /** @typedef {[x: number, y: number, pressure: number]} Point */
   /** @typedef {{ id: string, strokes: { points: Point[] }[], color: string, backgroundColor: string, symmetry: number, size: number, thinning: number, smoothing: number, streamline: number, taperStart: number, taperEnd: number }} DrawingState */
