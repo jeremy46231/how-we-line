@@ -164,7 +164,6 @@
   }
   async function animate() {
     if (isAnimating) return
-    console.log('Animating...')
     isAnimating = true
     animationStrokes.length = 0
     // @ts-ignore
@@ -172,7 +171,6 @@
     while (animationStrokes.length > 0) {
       const stroke = animationStrokes[0]
       while (stroke.points.length > 0) {
-        console.log('hii')
         stroke.points.shift()
         await sleep(4)
       }
@@ -181,10 +179,8 @@
     animationStrokes.length = 0
     await sleep(250)
     for (const stroke of strokes) {
-      console.log('stroke')
       animationStrokes.push({ points: [] })
       for (const point of stroke.points) {
-        console.log('point')
         const [x, y, pressure] = point
         animationStrokes[animationStrokes.length - 1].points.push([
           x,
@@ -196,7 +192,6 @@
       await sleep(100)
     }
     isAnimating = false
-    console.log('Animation complete')
   }
   // small convenience: export a method usable by a parent via component ref
   export function getSvgString() {
@@ -266,6 +261,22 @@
   </div>
 </div>
 
+<div id="pastDrawings">
+  {#if localStorage.getItem('pastDrawings')}
+    {#each JSON.parse(localStorage.getItem('pastDrawings')).slice(-6).reverse() as strokePaths}
+      <svg
+        viewBox="0 0 {size} {size}"
+        class="past-svg"
+        style="border:1px solid #ddd; border-radius:6px;"
+      >
+        {#each strokePaths as d}
+          <path {d} fill={color} fill-rule="nonzero" />
+        {/each}
+      </svg>
+    {/each}
+  {/if}
+</div>
+
 <style>
   .drawing-canvas {
     width: 100%;
@@ -294,5 +305,21 @@
     background: #fff;
     display: block;
     touch-action: none;
+  }
+
+  .past-svg {
+    width: 100px;
+    height: 100px;
+    text-align: left;
+  }
+
+  #pastDrawings {
+    display: inline-block;
+  }
+
+  @media screen and (max-width: 900px) {
+    #pastDrawings {
+      display: none;
+    }
   }
 </style>
