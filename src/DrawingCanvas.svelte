@@ -3,9 +3,11 @@
 
   let { size = 500 } = $props()
 
+  /** @typedef {[x: number, y: number, pressure: number]} Point */
+
   /** @type {SVGSVGElement} */
   let svgEl
-  /** @type {Array<{ points: Array<[x: number, y: number] | [x: number, y: number, pressure: number]> }>} */
+  /** @type {Array<{ points: Array<Point> }>} */
   let strokes = $state([])
 
   let isDrawing = $state(false)
@@ -23,11 +25,10 @@
 
   /**
    * Convert the polygon returned by getStroke into an SVG path.
-   * @param {(readonly number[])[]} stroke Outline polygon from perfect-freehand
-   * @param {boolean} [closed=true]
+   * @param {[number, number][]} stroke Outline polygon from perfect-freehand
    * @returns {string}
    */
-  function getSvgPathFromStroke(stroke, closed = true) {
+  function getSvgPathFromStroke(stroke) {
     if (!stroke || stroke.length === 0) return ''
 
     const d = stroke.reduce(
@@ -44,31 +45,62 @@
       ['M', stroke[0][0].toFixed(2), stroke[0][1].toFixed(2), 'Q']
     )
 
-    if (closed) d.push('Z')
+    d.push('Z')
     return d.join(' ')
+  }
+
+  /**
+   * Rotate a stroke around the center by a given number of degrees
+  * @param {number[][]} stroke
+   * @param {number} degrees
+   * @param {number} [cx=size/2] Optional center x (defaults to canvas center)
+   * @param {number} [cy=size/2] Optional center y (defaults to canvas center)
+   * @returns {[number, number][]}
+   */
+  function rotateStroke(stroke, degrees, cx = size / 2, cy = size / 2) {
+    const radians = (Math.PI / 180) * degrees
+    const cos = Math.cos(radians)
+    const sin = Math.sin(radians)
+    return stroke.map(([x, y]) => {
+      const dx = x - cx
+      const dy = y - cy
+      const rx = dx * cos - dy * sin + cx
+      const ry = dx * sin + dy * cos + cy
+      return [rx, ry]
+    })
   }
 
   // Derived array of path "d" values, one per stroke
   /** @type {string[]} */
   const strokePaths = $derived.by(() =>
-    strokes.map((s) => getSvgPathFromStroke(getStroke(s.points, options)))
+    strokes.flatMap((s) => {
+      console.log(s)
+      // check the first 10 points for a pressure other than 0, .5, or 1 (common defaults)
+      const hasRealPressure = s.points.slice(0, 10).some((p) => ![undefined, 0, 0.5, 1].includes(p[2]))
+      const stroke = getStroke(s.points, {
+        ...options,
+        simulatePressure: !hasRealPressure
+      })
+      const angles = [0, 45, 90, 135, 180, 225, 270, 315]
+      const paths = angles.map((angle) => {
+        const rotatedStroke = rotateStroke(stroke, angle)
+        return getSvgPathFromStroke(rotatedStroke)
+      })
+      return paths
+    })
   )
 
   /**
    * Convert pointer event to local coords.
-   * Returns [x,y] if real pressure not available (lets library simulate),
-   * or [x,y,pressure] if pressure > 0.
    * @param {PointerEvent} e
-   * @returns {[x: number, y: number] | [x: number, y: number, pressure: number]}
+   * @returns {Point}
    */
   function toLocalPoint(e) {
     const r = svgEl.getBoundingClientRect()
     const x = e.clientX - r.left
     const y = e.clientY - r.top
-    if (typeof e.pressure === 'number' && e.pressure > 0) {
-      return /** @type {[number, number, number]} */ ([x, y, e.pressure])
-    }
-    return /** @type {[number, number]} */ ([x, y])
+    const pressure = e.pressure
+    return [x, y, pressure]
   }
 
   /** @param {PointerEvent} e */
@@ -78,7 +110,7 @@
     try {
       svgEl.setPointerCapture(e.pointerId)
     } catch (err) {}
-    // start a new stroke with current color snapshot
+    // start a new stroke
     const stroke = { points: [] }
     stroke.points.push(toLocalPoint(e))
     strokes.push(stroke)
