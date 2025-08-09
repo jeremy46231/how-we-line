@@ -14,6 +14,7 @@
     "vite": "^7.1.0"
   },
   "dependencies": {
+    "nanoid": "^5.1.5",
     "perfect-freehand": "^1.2.2"
   }
 }
