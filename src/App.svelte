@@ -2,7 +2,11 @@
 
 <script>
   import DrawingCanvas from './DrawingCanvas.svelte';
+  import PostFeed from './PostFeed.svelte'
+  // import SoundGenerator from './SoundGenerator.svelte';
 </script>
 
-<DrawingCanvas size={600} />
-
+<DrawingCanvas />
+<!-- <SoundGenerator /> -->
+<div style="height: 4rem;"></div>
+<PostFeed />

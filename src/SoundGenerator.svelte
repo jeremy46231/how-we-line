@@ -1,92 +1,107 @@
 <script>
-  let { drawingState = $bindable() } = $props();
-  let audioCtx
-  let isPlaying = false
+  import { onDestroy } from 'svelte'
 
-  // Three emotion voices (happy, sad, mad)
-  const voices = [
-    {
-      key: 'happy',
-      color: '#f5d400',
-      wave: 'triangle',
-      range: [400, 1000],
-      freq: 680,
-      vol: 0.85,
-      osc: null,
-      gain: null,
-    },
-    {
-      key: 'sad',
-      color: '#3a7bd5',
-      wave: 'sine',
-      range: [120, 500],
-      freq: 310,
-      vol: 0.75,
-      osc: null,
-      gain: null,
-    },
-    {
-      key: 'mad',
-      color: '#e03131',
-      wave: 'sawtooth',
-      range: [200, 800],
-      freq: 500,
-      vol: 0.9,
-      osc: null,
-      gain: null,
-    },
-  ]
+  try {
+    let unsub
+    let sharedColor = '#000'
+    unsub = activeColor.subscribe((c) => (sharedColor = c))
+    onDestroy(() => unsub && unsub())
 
-  let masterGain
+    let audioCtx
+    let isPlaying = false
 
-  // Create / resume audio context (handle older webkit prefix safely)
-  function ensureCtx() {
-    if (!audioCtx) {
-      // Fallback for older Safari (ignore TS complaint in JS file)
-      const Ctx =
-        window.AudioContext ||
-        (window['webkitAudioContext'] && window['webkitAudioContext'])
-      audioCtx = new Ctx()
-      masterGain = audioCtx.createGain()
-      masterGain.gain.value = 0.18 // gentle
-      masterGain.connect(audioCtx.destination)
-    }
-  }
+    // Three emotion voices (happy, sad, mad)
+    const voices = [
+      {
+        key: 'happy',
+        color: '#f5d400',
+        wave: 'triangle',
+        range: [400, 1000],
+        freq: 680,
+        vol: 0.85,
+        osc: null,
+        gain: null,
+      },
+      {
+        key: 'sad',
+        color: '#3a7bd5',
+        wave: 'sine',
+        range: [120, 500],
+        freq: 310,
+        vol: 0.75,
+        osc: null,
+        gain: null,
+      },
+      {
+        key: 'mad',
+        color: '#e03131',
+        wave: 'sawtooth',
+        range: [200, 800],
+        freq: 500,
+        vol: 0.9,
+        osc: null,
+        gain: null,
+      },
+    ]
 
-  function startAll() {
-    ensureCtx()
-    voices.forEach((v) => {
-      if (v.osc) return // already running
-      const o = audioCtx.createOscillator()
-      o.type = v.wave
-      o.frequency.value = v.freq
-      const g = audioCtx.createGain()
-      g.gain.value = (v.vol ?? 1) / voices.length
-      o.connect(g).connect(masterGain)
-      o.start()
-      v.osc = o
-      v.gain = g
-    })
-    isPlaying = true
-  }
+    // (Removed animated chord lines; simpler mechanical wheel look.)
 
-  function stopAll() {
-    voices.forEach((v) => {
-      if (v.osc) {
-        try {
-          v.osc.stop()
-        } catch {}
-        v.osc.disconnect()
-        v.osc = null
+    let masterGain
+
+    // Create / resume audio context (handle older webkit prefix safely)
+    function ensureCtx() {
+      if (!audioCtx) {
+        // Fallback for older Safari (ignore TS complaint in JS file)
+        const Ctx =
+          window.AudioContext ||
+          (window['webkitAudioContext'] && window['webkitAudioContext'])
+        audioCtx = new Ctx()
+        masterGain = audioCtx.createGain()
+        masterGain.gain.value = 0.18 // gentle
+        masterGain.connect(audioCtx.destination)
       }
-    })
-    isPlaying = false
-  }
+    }
 
-  function togglePlay() {
-    isPlaying ? stopAll() : startAll()
-  }
+    function startAll() {
+      ensureCtx()
+      voices.forEach((v) => {
+        if (v.osc) return // already running
+        const o = audioCtx.createOscillator()
+        o.type = v.wave
+        o.frequency.value = v.freq
+        const g = audioCtx.createGain()
+        g.gain.value = (v.vol ?? 1) / voices.length
+        o.connect(g).connect(masterGain)
+        o.start()
+        v.osc = o
+        v.gain = g
+      })
+      isPlaying = true
+    }
 
+    function stopAll() {
+      voices.forEach((v) => {
+        if (v.osc) {
+          try {
+            v.osc.stop()
+          } catch {}
+          v.osc.disconnect()
+          v.osc = null
+        }
+      })
+      isPlaying = false
+    }
+
+    function togglePlay() {
+      isPlaying ? stopAll() : startAll()
+    }
+
+    function setVoiceFreq(index, voiceValue) {
+      const v = voices[index]
+      v.freq = voiceValue
+      if (v.osc)
+        v.osc.frequency.setTargetAtTime(voiceValue, audioCtx.currentTime, 0.015)
+    }
   function setVoiceFreq(index, voiceValue) {
     const v = voices[index]
     v.freq = voiceValue
@@ -137,7 +152,7 @@
     box-sizing: border-box;
   }
 
-  .bar input[type=range] {
+  .bar input[type='range'] {
     flex: 1 1 60px;
   }
 
