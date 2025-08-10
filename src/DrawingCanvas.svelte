@@ -448,6 +448,7 @@
         {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
           <button
             style="padding: 0; border: none; background: none; cursor: pointer;"
+            onclick={() => drawingState = drawing}
           >
             <DrawingRenderer
               initialDrawingState={drawing}
