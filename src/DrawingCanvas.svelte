@@ -220,9 +220,11 @@
    */
   function toLocalPoint(e) {
     const r = svgEl.getBoundingClientRect()
-    const x = e.clientX - r.left
-    const y = e.clientY - r.top
-    const pressure = e.pressure
+    const scaleX = size / r.width
+    const scaleY = size / r.height
+    const x = (e.clientX - r.left) * scaleX
+    const y = (e.clientY - r.top) * scaleY
+    const pressure = e.pressure ?? 0.5
     return [x, y, pressure]
   }
 
@@ -448,7 +450,7 @@
         {#each JSON.parse(localStorage.getItem('savedDrawings')).reverse() as drawing}
           <button
             style="padding: 0; border: none; background: none; cursor: pointer;"
-            onclick={() => drawingState = drawing}
+            onclick={() => (drawingState = drawing)}
           >
             <DrawingRenderer
               initialDrawingState={drawing}
